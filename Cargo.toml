@@ -1,0 +1,39 @@
+[package]
+name = "clia-tracing-appender"
+version = "0.2.0"
+authors = [
+    "Cris Liao <clia@163.com>",
+    "Zeki Sherif <zekshi@amazon.com>",
+    "Tokio Contributors <team@tokio.rs>"
+]
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/clia/tracing-appender"
+documentation = "https://docs.rs/clia-tracing-appender/0.2.0"
+homepage = "https://tokio.rs"
+description = """
+Provides utilities for file appenders and making non-blocking writers.
+"""
+categories = [
+    "development-tools::debugging",
+    "asynchronous",
+]
+keywords = ["logging", "tracing", "file-appender", "non-blocking-writer"]
+edition = "2018"
+rust-version = "1.53.0"
+
+[dependencies]
+crossbeam-channel = "0.5.0"
+time = { version = "0.3", default-features = false, features = ["formatting", "local-offset"] }
+parking_lot = { optional = true, version = "0.12.0" }
+symlink = "0.1.0"
+
+[dependencies.tracing-subscriber]
+version = "0.3.9"
+default-features = false
+features = ["fmt", "std"]
+
+[dev-dependencies]
+tracing = "0.1.31"
+time = { version = "0.3", default-features = false, features = ["formatting", "parsing"] }
+tempfile = "3"
