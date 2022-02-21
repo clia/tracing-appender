@@ -27,7 +27,7 @@
 //! ```rust
 //! # fn docs() {
 //! use tracing_appender::rolling::{RollingFileAppender, Rotation};
-//! let file_appender = RollingFileAppender::new(Rotation::HOURLY, "/some/directory", "prefix.log");
+//! let file_appender = RollingFileAppender::new(Rotation::HOURLY, "/some/directory", "prefix.log", true, true);
 //! # }
 //! ```
 use crate::sync::{RwLock, RwLockReadGuard};
@@ -60,7 +60,7 @@ use symlink::{symlink_file, remove_symlink_file};
 ///
 /// ```rust
 /// # fn docs() {
-/// let file_appender = tracing_appender::rolling::hourly("/some/directory", "prefix");
+/// let file_appender = tracing_appender::rolling::hourly("/some/directory", "prefix", true, true);
 /// # }
 /// ```
 ///
@@ -71,7 +71,7 @@ use symlink::{symlink_file, remove_symlink_file};
 /// use tracing_subscriber::fmt::writer::MakeWriterExt;
 ///
 /// // Log all events to a rolling log file.
-/// let logfile = tracing_appender::rolling::hourly("/logs", "myapp-logs");
+/// let logfile = tracing_appender::rolling::hourly("/logs", "myapp-logs", true, true);
 
 /// // Log `INFO` and above to stdout.
 /// let stdout = std::io::stdout.with_max_level(tracing::Level::INFO);
@@ -123,7 +123,7 @@ impl RollingFileAppender {
     /// 
     /// symlink: Will create a symlink file for current rolling file.
     /// 
-    /// offset: Use local timezone offset for time in rolling file name, default is UTC time.
+    /// local_offset: Use local timezone offset for time in rolling file name, default is UTC time.
     ///
     /// Alternatively, a `RollingFileAppender` can be constructed using one of the following helpers:
     ///
@@ -156,12 +156,11 @@ impl RollingFileAppender {
         } else {
             UtcOffset::UTC
         };
-        let now = OffsetDateTime::now_utc().to_offset(offset);        
+        let now = OffsetDateTime::now_utc().to_offset(offset);
+
         let log_directory = directory.as_ref().to_str().unwrap();
         let log_filename_prefix = file_name_prefix.as_ref().to_str().unwrap();
-
         let filename = rotation.join_date(log_filename_prefix, &now);
-        let next_date = rotation.next_date(&now);
         let writer = RwLock::new(
             create_writer(log_directory, &filename).expect("failed to create appender"),
         );
@@ -175,6 +174,8 @@ impl RollingFileAppender {
                 eprintln!("Couldn't create symlink: {}", err);
             }
         }
+
+        let next_date = rotation.next_date(&now);
 
         Self {
             state: Inner {
@@ -236,6 +237,10 @@ impl<'a> tracing_subscriber::fmt::writer::MakeWriter<'a> for RollingFileAppender
 /// The directory of the log file is specified with the `directory` argument.
 /// `file_name_prefix` specifies the _prefix_ of the log file. `RollingFileAppender`
 /// adds the current date, hour, and minute to the log file in UTC.
+/// 
+/// symlink: Will create a symlink file for current rolling file.
+/// 
+/// local_offset: Use local timezone offset for time in rolling file name, default is UTC time.
 ///
 /// # Examples
 ///
@@ -243,7 +248,7 @@ impl<'a> tracing_subscriber::fmt::writer::MakeWriter<'a> for RollingFileAppender
 /// # #[clippy::allow(needless_doctest_main)]
 /// fn main () {
 /// # fn doc() {
-///     let appender = tracing_appender::rolling::minutely("/some/path", "rolling.log");
+///     let appender = tracing_appender::rolling::minutely("/some/path", "rolling.log", true, true);
 ///     let (non_blocking_appender, _guard) = tracing_appender::non_blocking(appender);
 ///
 ///     let subscriber = tracing_subscriber::fmt().with_writer(non_blocking_appender);
@@ -273,6 +278,10 @@ pub fn minutely(
 /// The directory of the log file is specified with the `directory` argument.
 /// `file_name_prefix` specifies the _prefix_ of the log file. `RollingFileAppender`
 /// adds the current date and hour to the log file in UTC.
+/// 
+/// symlink: Will create a symlink file for current rolling file.
+/// 
+/// local_offset: Use local timezone offset for time in rolling file name, default is UTC time.
 ///
 /// # Examples
 ///
@@ -280,7 +289,7 @@ pub fn minutely(
 /// # #[clippy::allow(needless_doctest_main)]
 /// fn main () {
 /// # fn doc() {
-///     let appender = tracing_appender::rolling::hourly("/some/path", "rolling.log");
+///     let appender = tracing_appender::rolling::hourly("/some/path", "rolling.log", true, true);
 ///     let (non_blocking_appender, _guard) = tracing_appender::non_blocking(appender);
 ///
 ///     let subscriber = tracing_subscriber::fmt().with_writer(non_blocking_appender);
@@ -311,6 +320,10 @@ pub fn hourly(
 /// defined by [`Rotation`](struct.Rotation.html). The `directory` and
 /// `file_name_prefix` arguments determine the location and file name's _prefix_
 /// of the log file. `RollingFileAppender` automatically appends the current date in UTC.
+/// 
+/// symlink: Will create a symlink file for current rolling file.
+/// 
+/// local_offset: Use local timezone offset for time in rolling file name, default is UTC time.
 ///
 /// # Examples
 ///
@@ -318,7 +331,7 @@ pub fn hourly(
 /// # #[clippy::allow(needless_doctest_main)]
 /// fn main () {
 /// # fn doc() {
-///     let appender = tracing_appender::rolling::daily("/some/path", "rolling.log");
+///     let appender = tracing_appender::rolling::daily("/some/path", "rolling.log", true, true);
 ///     let (non_blocking_appender, _guard) = tracing_appender::non_blocking(appender);
 ///
 ///     let subscriber = tracing_subscriber::fmt().with_writer(non_blocking_appender);
@@ -546,11 +559,14 @@ impl Inner {
     }
 
     fn advance_date(&self, now: OffsetDateTime) -> bool {
+        eprintln!("now: {}", now);
         let next_date = self
             .rotation
             .next_date(&now)
             .map(|date| date.unix_timestamp() as usize)
             .unwrap_or(0);
+        eprintln!("next_date: {}", next_date);
+        eprintln!("self.next_date: {:?}", self.next_date);
         self.next_date
             .compare_exchange(
                 now.unix_timestamp() as usize,
