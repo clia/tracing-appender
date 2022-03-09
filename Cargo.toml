@@ -1,16 +1,17 @@
 [package]
-name = "tracing-appender"
+name = "clia-tracing-appender"
 version = "0.2.1"
 authors = [
+    "Cris Liao <clia@163.com>",
     "Zeki Sherif <zekshi@amazon.com>",
     "Tokio Contributors <team@tokio.rs>"
 ]
 license = "MIT"
 readme = "README.md"
-repository = "https://github.com/tokio-rs/tracing"
+repository = "https://github.com/clia/tracing-appender"
 homepage = "https://tokio.rs"
 description = """
-Provides utilities for file appenders and making non-blocking writers.
+A personal temporary tracing-appender, support symlinking latest log file and local offset time format.
 """
 categories = [
     "development-tools::debugging",
@@ -27,12 +28,11 @@ parking_lot = { optional = true, version = "0.12.0" }
 symlink = "0.1.0"
 
 [dependencies.tracing-subscriber]
-path = "../tracing-subscriber"
 version = "0.3"
 default-features = false
 features = ["fmt", "std"]
 
 [dev-dependencies]
-tracing = { path = "../tracing", version = "0.1" }
-time = { version = "0.3", default-features = false, features = ["formatting", "parsing"] }
+tracing = { version = "0.1" }
+time = { package = "clia-time", version = "0.3", default-features = false, features = ["formatting", "parsing"] }
 tempfile = "3"
