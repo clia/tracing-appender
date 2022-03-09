@@ -39,7 +39,7 @@ use std::{
     sync::atomic::{AtomicUsize, Ordering},
 };
 use symlink::{symlink_file, remove_symlink_file};
-use time::{format_description, Duration, OffsetDateTime, Time};
+use time::{format_description, Duration, OffsetDateTime, Time, UtcOffset};
 
 /// A file appender with the ability to rotate log files at a fixed schedule.
 ///
@@ -89,6 +89,7 @@ use time::{format_description, Duration, OffsetDateTime, Time};
 pub struct RollingFileAppender {
     state: Inner,
     writer: RwLock<File>,
+    offset: UtcOffset,
 }
 
 /// A [writer] that writes to a rolling log file.
@@ -143,7 +144,8 @@ impl RollingFileAppender {
         directory: impl AsRef<Path>,
         file_name_prefix: impl AsRef<Path>,
     ) -> RollingFileAppender {
-        let now = OffsetDateTime::now_utc();
+        let offset = UtcOffset::current_local_offset().expect("should get local offset!");
+        let now = OffsetDateTime::now_utc().to_offset(offset);
         let log_directory = directory.as_ref().to_str().unwrap();
         let log_filename_prefix = file_name_prefix.as_ref().to_str().unwrap();
 
@@ -173,13 +175,14 @@ impl RollingFileAppender {
                 rotation,
             },
             writer,
+            offset,
         }
     }
 }
 
 impl io::Write for RollingFileAppender {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        let now = OffsetDateTime::now_utc();
+        let now = OffsetDateTime::now_utc().to_offset(self.offset);
         let writer = self.writer.get_mut();
         if self.state.should_rollover(now) {
             let _did_cas = self.state.advance_date(now);
@@ -197,7 +200,7 @@ impl io::Write for RollingFileAppender {
 impl<'a> tracing_subscriber::fmt::writer::MakeWriter<'a> for RollingFileAppender {
     type Writer = RollingWriter<'a>;
     fn make_writer(&'a self) -> Self::Writer {
-        let now = OffsetDateTime::now_utc();
+        let now = OffsetDateTime::now_utc().to_offset(self.offset);
 
         // Should we try to roll over the log file?
         if self.state.should_rollover(now) {
