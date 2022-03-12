@@ -530,7 +530,7 @@ impl Inner {
             .map(|date| date.unix_timestamp() as usize)
             .unwrap_or(0);
 
-        self.next_date.store(next_date, Ordering::Relaxed);
+        self.next_date.store(next_date, Ordering::Release);
             // .compare_exchange(
             //     now.unix_timestamp() as usize,
             //     next_date,
