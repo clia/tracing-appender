@@ -185,9 +185,9 @@ impl io::Write for RollingFileAppender {
         let now = OffsetDateTime::now_utc().to_offset(self.offset);
         let writer = self.writer.get_mut();
         if self.state.should_rollover(now) {
+            self.state.refresh_writer(now, writer);
             let _did_cas = self.state.advance_date(now);
             debug_assert!(_did_cas, "if we have &mut access to the appender, no other thread can have advanced the timestamp...");
-            self.state.refresh_writer(now, writer);
         }
         writer.write(buf)
     }
