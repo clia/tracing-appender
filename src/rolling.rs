@@ -529,18 +529,17 @@ impl Inner {
             .next_date(&now)
             .map(|date| date.unix_timestamp() as usize)
             .unwrap_or(0);
-        eprintln!("now: {}", now.unix_timestamp() as usize);
-        eprintln!("next_date: {}", next_date);
-        eprintln!("self.next_date: {:?}", self.next_date);
 
-        self.next_date
-            .compare_exchange(
-                now.unix_timestamp() as usize,
-                next_date,
-                Ordering::AcqRel,
-                Ordering::Acquire,
-            )
-            .is_ok()
+        self.next_date.store(next_date, Ordering::Relaxed);
+            // .compare_exchange(
+            //     now.unix_timestamp() as usize,
+            //     next_date,
+            //     Ordering::AcqRel,
+            //     Ordering::Acquire,
+            // )
+            // .is_ok()
+
+        true
     }
 }
 
