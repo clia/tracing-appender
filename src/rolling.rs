@@ -517,6 +517,9 @@ impl Inner {
     fn should_rollover(&self, date: OffsetDateTime) -> bool {
         // the `None` case means that the `InnerAppender` *never* rotates log files.
         let next_date = self.next_date.load(Ordering::Acquire);
+        eprintln!("date: {}", date.unix_timestamp() as usize);
+        eprintln!("next_date: {}", next_date);
+        
         if next_date == 0 {
             return false;
         }
